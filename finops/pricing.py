@@ -60,16 +60,44 @@ def break_even_utilization(discount_frac: float) -> float:
     return max(0.0, min(1.0, 1.0 - discount_frac))
 
 
-def recommend_tier(hours_per_day: float, interruptible: bool, reserved_discount: float = 0.45) -> str:
+def cache_is_worth_it(
+    avg_cache_reads: float,
+    write_cost_per_m: float,
+    read_discount: float = 0.10,
+) -> bool:
+    """Extension 3: Prompt caching is only cost-effective when expected read savings exceed write overhead.
+
+    Savings per read = write_cost_per_m * (1.0 - read_discount).
+    Break-even reads = 1.0 / (1.0 - read_discount) ~ 1.11 reads.
+    """
+    if write_cost_per_m <= 0:
+        return True
+    savings_per_read = write_cost_per_m * (1.0 - read_discount)
+    return (avg_cache_reads * savings_per_read) >= write_cost_per_m
+
+
+def recommend_tier(
+    hours_per_day: float,
+    interruptible: bool,
+    reserved_discount: float = 0.45,
+    gpu_type: str | None = None,
+    job_days: int | None = None,
+) -> str:
     """Pick a purchasing tier from a workload's duty cycle + interruptibility.
 
-    DOCUMENTED simple policy (instructor extension point — swap in your own):
+    DOCUMENTED policy (with Extension 1 support for GPU type risk and job duration):
+      - short duration (<30 days) -> avoid long reserved commitments
       - interruptible & not 24/7  -> 'spot'      (checkpoint and ride the discount)
       - duty cycle >= break-even  -> 'reserved'  (steady, high utilization)
       - otherwise                 -> 'on_demand' (spiky / low duty)
     """
     duty = max(0.0, hours_per_day) / 24.0
     be = break_even_utilization(reserved_discount)
+    if job_days is not None and job_days < 30:
+        # Short jobs should avoid reserved commitments
+        if interruptible:
+            return "spot"
+        return "on_demand"
     if interruptible and hours_per_day < 24:
         return "spot"
     if duty >= be:

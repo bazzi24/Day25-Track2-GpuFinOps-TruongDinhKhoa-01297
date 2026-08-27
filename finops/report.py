@@ -10,6 +10,7 @@ def build_report(baseline_usd: float, optimized_usd: float, levers: dict,
     lines = [
         "# NimbusAI — GPU Cost Optimization Report",
         "",
+        "**Student:** Trương Đình Khoa (MSSV: 2A202601297)  ",
         f"**Period:** {period}  ",
         f"**Baseline spend:** ${baseline_usd:,.0f}  ",
         f"**Optimized spend:** ${optimized_usd:,.0f}  ",

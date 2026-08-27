@@ -18,6 +18,15 @@ def test_recommend_tier():
     assert pricing.recommend_tier(2, True) == "spot"
     assert pricing.recommend_tier(24, False) == "reserved"
     assert pricing.recommend_tier(4, False) == "on_demand"
+    # Extension 1 checks: short job duration
+    assert pricing.recommend_tier(24, False, job_days=10) == "on_demand"
+    assert pricing.recommend_tier(15, True, job_days=10) == "spot"
+
+
+def test_cache_is_worth_it():
+    # Extension 3 checks
+    assert pricing.cache_is_worth_it(avg_cache_reads=2.0, write_cost_per_m=3.0) is True
+    assert pricing.cache_is_worth_it(avg_cache_reads=0.5, write_cost_per_m=3.0) is False
 
 
 def test_request_cost_and_cache():
